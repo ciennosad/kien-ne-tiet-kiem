@@ -1,0 +1,40 @@
+# version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: expense_manager
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/expense_manager
+      JWT_ACCESS_SECRET: d641aaab09303de279066ac1078820b66d0f903de9e3d93cfc3d16df04bf7e273
+      JWT_REFRESH_SECRET: df4e117b9c97119a766dea321098380d009bf392da28ae8502ebcea4f6779629
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      ENCRYPTION_KEY: d63274a9556a18131614154f9b199b3bb30ec49b85bd1e7dbb910fb495698555
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "4000:4000"
+
+volumes:
+  db_data:
